@@ -49,7 +49,7 @@ function script.windowMain(dt)
     end
 
     if not positionSet then
-        ui.setNextWindowPosition(vec2(960, 540), vec2(0.5, 0.5))
+        ui.setNextWindowPosition(vec2(0, 0))
         positionSet = true
     end
 
