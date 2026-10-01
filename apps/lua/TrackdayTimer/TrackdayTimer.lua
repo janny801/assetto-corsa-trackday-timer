@@ -1,7 +1,7 @@
 -- TrackdayTimer.lua
 -- CSP app timer which leaves the native Track Day session and AI Flood untouched.
 
-local durationMinutes = 10
+local durationMinutes = 1
 local durationStarted = false
 local elapsed = 0
 local sessionOver = false
@@ -27,7 +27,7 @@ local function finishSession()
     finishRequested = true
     showMessage('TRACK DAY OVER', 'Returning to pits and opening the session results.')
     ac.tryToTeleportToPits()
-    ac.tryToOpenRaceMenu('time')
+    ac.tryToSkipSession()
 end
 
 function script.windowMain(dt)
@@ -70,7 +70,7 @@ function script.update(dt)
 
     if not sessionOver then
         elapsed = elapsed + dt
-        if elapsed >= durationMinutes * 60 then
+        if sim.sessionTimeLeft <= 0 or elapsed >= durationMinutes * 60 then
             sessionOver = true
             lapAtExpiry = car.lapCount
             messageTimer = 0

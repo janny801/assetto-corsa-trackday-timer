@@ -267,6 +267,15 @@ class FullPatcher
         mainMod.Resources.Remove(oldRes);
         mainMod.Resources.Add(new EmbeddedResource("costura.actools.dll.compressed", ManifestResourceAttributes.Public, actoolsBytes));
         Console.WriteLine("  Resource updated from original assembly. New size: " + actoolsBytes.Length + " bytes");
+        if (Environment.GetEnvironmentVariable("TRACKDAY_FULL_PATCH") != "1")
+        {
+            Console.WriteLine("  Minimal test mode: leaving QuickDrive mode generation and UI untouched.");
+            cmAsm.Write(targetCmPath);
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("  [SUCCESS] Minimal one-minute native Track Day timer installed.");
+            Console.ResetColor();
+            return;
+        }
 
         Console.WriteLine("  Step 2: Modify QuickDrive_Trackday.ViewModel...");
         var qdTrackday = mainMod.Types.First(delegate (TypeDefinition t) { return t.Name == "QuickDrive_Trackday"; });
@@ -587,32 +596,7 @@ class FullPatcher
         if (durationInstruction == null)
             throw new Exception("The native 720-minute Track Day duration was not found.");
 
-        FieldDefinition durationField = null;
-        TypeDefinition baseType = trackday.BaseType.Resolve();
-        while (baseType != null && durationField == null)
-        {
-            durationField = baseType.Fields.FirstOrDefault(delegate (FieldDefinition f) {
-                return f.Name == "Duration";
-            });
-            baseType = baseType.BaseType == null ? null : baseType.BaseType.Resolve();
-        }
-        if (durationField == null)
-            throw new Exception("The native Track Day duration field was not found.");
-
-        var il = method.Body.GetILProcessor();
-        var boxInstruction = durationInstruction.Next;
-        var fallback = il.Create(OpCodes.Ldc_I4, 720);
-        var after = boxInstruction;
-        var useDuration = il.Create(OpCodes.Ldarg_0);
-        il.Replace(durationInstruction, useDuration);
-        il.InsertAfter(useDuration, il.Create(OpCodes.Ldfld, durationField));
-        il.InsertAfter(useDuration.Next, il.Create(OpCodes.Ldc_R8, 0.0));
-        il.InsertAfter(useDuration.Next.Next, il.Create(OpCodes.Ble_Un_S, fallback));
-        il.InsertAfter(useDuration.Next.Next.Next, il.Create(OpCodes.Ldarg_0));
-        il.InsertAfter(useDuration.Next.Next.Next.Next, il.Create(OpCodes.Ldfld, durationField));
-        il.InsertAfter(useDuration.Next.Next.Next.Next.Next, il.Create(OpCodes.Conv_I4));
-        il.InsertAfter(useDuration.Next.Next.Next.Next.Next.Next, il.Create(OpCodes.Br_S, after));
-        il.InsertBefore(boxInstruction, fallback);
+        durationInstruction.Operand = 1;
     }
 
     static byte[] CompressActools(string path, byte[] originalResource)

@@ -54,14 +54,17 @@ When the configured time expires in-game, Assetto Corsa displays **TRACK DAY OVE
 Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Track Day sessions:
 - Provides an in-game duration slider and Start button.
 - When the configured time expires, repeatedly broadcasts **"TRACK DAY OVER"**.
-- It waits for a lap completion or pit entry, then calls CSP's supported pit teleport and timing-menu
-  functions.
+- It waits for a lap completion or pit entry, then calls CSP's supported pit teleport and
+  `ac.tryToSkipSession()` functions to open the native results screen.
 - It does not rewrite `race.ini`, change session modes, pause, close the process, alter controls, or
   manipulate AI vehicles.
 
 The app is available after the game session starts; CSP Lua apps cannot add controls to
 Content Manager's pre-launch Track Day setup screen. A Content Manager slider requires patching
 Content Manager itself, and earlier attempts changed the generated mode and disabled AI Flood.
+For this controlled native-timer test, the Content Manager slider is intentionally disabled and
+the original native 720-minute value is replaced with one minute. This isolates the native session
+countdown before the slider UI is reintroduced.
 
 ---
 
