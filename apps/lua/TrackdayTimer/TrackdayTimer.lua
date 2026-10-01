@@ -1,6 +1,7 @@
 -- TrackdayTimer.lua
 -- Assetto Corsa Track Day Session Concluder
--- Automatically brings car back to pits and ends session when timer expires.
+-- Automatically brings car back to pits, keeps overtime message active,
+-- and concludes session when timer expires.
 
 local isTrackDay = false
 local sessionOvertime = false
@@ -8,8 +9,9 @@ local sessionEnded = false
 local initialOvertimeLap = nil
 local stoppedTimer = 0
 local overtimeTimer = 0
-local notifiedOvertime = false
-local notifiedEnd = false
+local messageRefreshTimer = 0
+local endStage = 0
+local endStageTimer = 0
 
 local function checkIsTrackDay()
     local sim = ac.getSim()
@@ -48,14 +50,19 @@ function script.update(dt)
             initialOvertimeLap = car.lapCount
             overtimeTimer = 0
             stoppedTimer = 0
-        end
-
-        if not notifiedOvertime then
-            notifiedOvertime = true
-            ac.setMessage("TRACK DAY OVER", "Complete your lap or return to pits to conclude.")
+            messageRefreshTimer = 0
+            -- Show persistent message immediately (3600 seconds)
+            ac.setMessage("TRACK DAY OVER", "Complete your lap or return to pits to conclude.", nil, 3600)
         end
 
         overtimeTimer = overtimeTimer + dt
+        messageRefreshTimer = messageRefreshTimer + dt
+
+        -- Keep the overtime message persistent on screen until driver returns to pits
+        if not sessionEnded and messageRefreshTimer >= 3.0 then
+            messageRefreshTimer = 0
+            ac.setMessage("TRACK DAY OVER", "Complete your lap or return to pits to conclude.", nil, 3600)
+        end
 
         -- Check if car has stopped after overtime
         if math.abs(car.speedKmh) < 5 then
@@ -76,24 +83,61 @@ function script.update(dt)
 
         if not sessionEnded and (lapCompleted or inPits or carStopped or timedOut) then
             sessionEnded = true
-            if not notifiedEnd then
-                notifiedEnd = true
-                ac.setMessage("TRACK DAY HAS ENDED", "Returning to pits...")
-            end
-
+            endStage = 1
+            endStageTimer = 0
+            
+            -- Display persistent session finished message
+            ac.setMessage("TRACK DAY HAS ENDED", "Session concluded. Returning to pits...", nil, 3600)
+            
             -- Teleport car to pit stall
             ac.tryToTeleportToPits()
-
-            -- Open race menu (summary/times/exit)
-            ac.tryToOpenRaceMenu('time')
         end
     end
 
-    -- If session has officially ended, keep player in pits
+    -- Two-stage session end sequence to ensure smooth teleport and menu opening
     if sessionEnded then
+        endStageTimer = endStageTimer + dt
+
+        -- Lock vehicle controls in pits
+        local controls = ac.overrideCarControls(0)
+        if controls then
+            controls.gas = 0
+            controls.handbrake = 1
+            controls.gear = 0
+        end
+
+        if endStage == 1 and endStageTimer >= 0.5 then
+            endStage = 2
+            
+            -- Update message
+            ac.setMessage("TRACK DAY HAS ENDED", "Session concluded. Select Exit to return to Content Manager.", nil, 3600)
+            
+            -- Tell AC engine to finish/skip session
+            ac.tryToSkipSession()
+            
+            -- Open race menu & pause game so Exit/Restart menu is presented
+            ac.tryToOpenRaceMenu('time')
+            ac.tryToPause(true)
+
+            -- Show interactive popup dialog in case pause menu was dismissed
+            ui.modalPopup(
+                "TRACK DAY HAS ENDED",
+                "Track Day session has ended.\nYour car has returned to the pits.\n\nSelect Exit to view final results in Content Manager.",
+                "Exit to Menu",
+                "Stay in Pits",
+                ui.Icons.Exit,
+                nil,
+                function(okPressed)
+                    if okPressed then
+                        ac.tryToPause(true)
+                    end
+                end
+            )
+        end
+
+        -- If user somehow leaves pit box after session ended, return them to pits
         if not car.isInPit and not car.isInPitlane then
             ac.tryToTeleportToPits()
-            ac.tryToOpenRaceMenu('time')
         end
     end
 end
