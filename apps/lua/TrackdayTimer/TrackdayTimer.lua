@@ -6,7 +6,6 @@ local durationStarted = false
 local elapsed = 0
 local sessionOver = false
 local finishRequested = false
-local autoOpened = false
 local shutdownAt = nil
 local positionSet = false
 local hudPositionSet = false
@@ -35,10 +34,10 @@ local function requestFinishSession()
 end
 
 local function openTimerApp()
-    if not autoOpened then
+    if not durationStarted then
         ac.setWindowOpen('main', true)
+    else
         ac.setWindowOpen('hud', true)
-        autoOpened = true
     end
 end
 
@@ -75,6 +74,7 @@ function script.windowMain(dt)
             finishRequested = false
             lapAtExpiry = nil
             showMessage('TRACK DAY TIMER', string.format('%d-minute timer started.', durationMinutes))
+            ac.setWindowOpen('main', false)
         end
         ui.popFont()
         return
@@ -99,13 +99,12 @@ function script.windowHUD(dt)
     end
 
     local remaining = math.max(0, durationMinutes * 60 - elapsed)
-    ui.drawRectFilled(vec2(0, 0), ui.windowSize(), rgbm(0.01, 0.02, 0.03, 0.9), 10)
-    ui.drawRect(vec2(0, 0), ui.windowSize(), rgbm(0.9, 0.12, 0.04, 1), 2, 10)
     ui.pushFont(ui.Font.Title)
     if sessionOver then
         ui.textColored('TRACK DAY OVER', rgbm(1, 0.2, 0.1, 1))
     else
-        ui.text(string.format('TRACK DAY TIMER  %02d:%02d', math.floor(remaining / 60), math.floor(remaining % 60)))
+        ui.textColored(string.format('TRACK DAY TIMER  %02d:%02d', math.floor(remaining / 60), math.floor(remaining % 60)),
+            rgbm(1, 1, 1, 1))
     end
     ui.popFont()
 end
@@ -113,7 +112,6 @@ end
 function script.update(dt)
     local sim = ac.getSim()
     if not sim or not sim.isSessionStarted or not isTrackDay() then
-        autoOpened = false
         positionSet = false
         hudPositionSet = false
         sessionIndex = nil
