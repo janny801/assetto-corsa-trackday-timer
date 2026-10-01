@@ -9,7 +9,9 @@ local finishRequested = false
 local autoOpened = false
 local shutdownAt = nil
 local positionSet = false
+local hudPositionSet = false
 local sessionIndex = nil
+local lapAtExpiry = nil
 
 local function isTrackDay()
     local sim = ac.getSim()
@@ -21,10 +23,10 @@ local function isTrackDay()
 end
 
 local function showMessage(title, description)
-    ac.setMessage(title, description, nil, 3600)
+    ac.setMessage(title, description, nil, 10)
 end
 
-local function finishSession()
+local function requestFinishSession()
     if finishRequested then return end
     finishRequested = true
     showMessage('TRACK DAY OVER', 'Returning to the pits and ending Assetto Corsa.')
@@ -35,6 +37,7 @@ end
 local function openTimerApp()
     if not autoOpened then
         ac.setWindowOpen('main', true)
+        ac.setWindowOpen('hud', true)
         autoOpened = true
     end
 end
@@ -47,7 +50,7 @@ function script.windowMain(dt)
     end
 
     if not positionSet then
-        ui.setNextWindowPosition(vec2(120, 445))
+        ui.setNextWindowPosition(vec2(760, 360))
         positionSet = true
     end
 
@@ -61,6 +64,7 @@ function script.windowMain(dt)
             elapsed = 0
             sessionOver = false
             finishRequested = false
+            lapAtExpiry = nil
             showMessage('TRACK DAY TIMER', string.format('%d-minute timer started.', durationMinutes))
         end
         return
@@ -69,9 +73,30 @@ function script.windowMain(dt)
     local remaining = math.max(0, durationMinutes * 60 - elapsed)
     ui.text(string.format('Remaining: %02d:%02d', math.floor(remaining / 60), math.floor(remaining % 60)))
     if sessionOver then
-        ui.textWrapped('Timer expired. Ending the session and returning to Content Manager.')
+        ui.textWrapped('Timer expired. Finish this lap or enter the pits to end the session.')
     else
         ui.text('AI Flood and native Track Day mode are unchanged.')
+    end
+end
+
+function script.windowHUD(dt)
+    local sim = ac.getSim()
+    if not sim or not sim.isSessionStarted or not isTrackDay() or not durationStarted then return end
+
+    if not hudPositionSet then
+        ui.setNextWindowPosition(vec2(760, 35))
+        hudPositionSet = true
+    end
+
+    local remaining = math.max(0, durationMinutes * 60 - elapsed)
+    if sessionOver then
+        ui.pushFont(ui.Font.Main)
+        ui.textColored('TRACK DAY OVER', rgbm(1, 0.2, 0.1, 1))
+        ui.popFont()
+    else
+        ui.pushFont(ui.Font.Main)
+        ui.text(string.format('TRACK DAY TIMER  %02d:%02d', math.floor(remaining / 60), math.floor(remaining % 60)))
+        ui.popFont()
     end
 end
 
@@ -80,6 +105,7 @@ function script.update(dt)
     if not sim or not sim.isSessionStarted or not isTrackDay() then
         autoOpened = false
         positionSet = false
+        hudPositionSet = false
         sessionIndex = nil
         return
     end
@@ -91,6 +117,7 @@ function script.update(dt)
         sessionOver = false
         finishRequested = false
         shutdownAt = nil
+        lapAtExpiry = nil
     end
 
     openTimerApp()
@@ -113,11 +140,17 @@ function script.update(dt)
 
     if not sessionOver then
         elapsed = elapsed + dt
-        if sim.sessionTimeLeft <= 0 or elapsed >= durationMinutes * 60 then
+        if elapsed >= durationMinutes * 60 then
             sessionOver = true
-            showMessage('TRACK DAY OVER', 'Ending the session and returning to Content Manager.')
-            finishSession()
+            lapAtExpiry = car.lapCount
+            showMessage('TRACK DAY OVER', 'Finish this lap or enter the pits to end the session.')
         end
         return
+    end
+
+    local completedLap = lapAtExpiry and car.lapCount > lapAtExpiry
+    local inPits = car.isInPitlane or car.isInPit
+    if completedLap or inPits then
+        requestFinishSession()
     end
 end
