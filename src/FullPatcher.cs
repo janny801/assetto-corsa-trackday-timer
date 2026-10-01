@@ -115,36 +115,14 @@ class FullPatcher
                 PatchContentManager(cmPath, actoolsCompressedPath, actoolsPatchedPath, helperPath, libDir);
             }
 
-            // 2. Locate Assetto Corsa directory
+            // 2. The game executable is intentionally left untouched. Track Day already
+            // owns the countdown and session transition; changing acs.exe can interfere
+            // with CSP behavior, including AI Flood.
             string acDir = FindAssettoCorsa(args.Length > 1 ? args[1] : null);
             if (string.IsNullOrEmpty(acDir) || !Directory.Exists(acDir))
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("[WARNING] Assetto Corsa directory not found automatically.");
-                Console.ResetColor();
-                Console.Write("Please enter full path to your assettocorsa folder: ");
-                acDir = Console.ReadLine().Trim('"', ' ');
-            }
-
-            if (!Directory.Exists(acDir))
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("[ERROR] Could not find Assetto Corsa directory. Skipping AC patch.");
-                Console.ResetColor();
-            }
+                Console.WriteLine("[NOTICE] Assetto Corsa directory not found; no game files need changing.");
             else
-            {
-                while (System.Diagnostics.Process.GetProcessesByName("acs").Length > 0)
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine("[NOTICE] Assetto Corsa is currently running.");
-                    Console.WriteLine("Please close Assetto Corsa and press ENTER to continue...");
-                    Console.ResetColor();
-                    Console.ReadLine();
-                }
-
-                PatchAssettoCorsa(acDir, repoRoot);
-            }
+                Console.WriteLine("[NOTICE] Assetto Corsa executable left unchanged.");
 
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Green;

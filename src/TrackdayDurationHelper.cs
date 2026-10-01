@@ -94,7 +94,7 @@ namespace AcManager.Pages.Drive
 
                 Slider slider = new Slider();
                 slider.Minimum = 0;
-                slider.Maximum = 120;
+                slider.Maximum = 180;
                 slider.SmallChange = 1;
                 slider.LargeChange = 5;
                 slider.SetBinding(Slider.ValueProperty, new Binding("TrackdayDuration") { Mode = BindingMode.TwoWay });
