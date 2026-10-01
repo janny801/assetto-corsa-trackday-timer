@@ -22,8 +22,8 @@ local function isTrackDay()
            (first:find('track') ~= nil and first:find('day') ~= nil)
 end
 
-local function showMessage(title, description)
-    ac.setMessage(title, description, nil, 10)
+local function showMessage(title, description, duration)
+    ac.setMessage(title, description, nil, duration or 5)
 end
 
 local function requestFinishSession()
@@ -50,16 +50,25 @@ function script.windowMain(dt)
     end
 
     if not positionSet then
-        ui.setNextWindowPosition(vec2(760, 360))
+        ui.setNextWindowPosition(vec2(960, 540), vec2(0.5, 0.5))
         positionSet = true
     end
 
+    ui.drawRectFilled(vec2(0, 0), ui.windowSize(), rgbm(0.02, 0.03, 0.05, 0.96), 12)
+    ui.drawRectFilled(vec2(0, 0), vec2(ui.windowSize().x, 12), rgbm(0.85, 0.08, 0.04, 1), 12)
+    ui.pushFont(ui.Font.Title)
     ui.header('Track Day Timer')
+    ui.popFont()
     if not durationStarted then
-        ui.textWrapped('Choose how long this Track Day should run, then press Start.')
+        ui.pushFont(ui.Font.Main)
+        ui.text('SET YOUR TRACK DAY DURATION')
+        ui.popFont()
+        ui.textWrapped('Choose how long this session should run. AI Flood and the native Track Day mode remain unchanged.')
+        ui.separator()
         ui.setNextItemWidth(ui.availableSpaceX())
         durationMinutes = math.floor(ui.slider('##duration', durationMinutes, 1, 180, 'Session length: %.0f min') + 0.5)
-        if ui.button('Start timer', vec2(ui.availableSpaceX(), 0)) then
+        ui.pushFont(ui.Font.Title)
+        if ui.button('START TRACK DAY', vec2(ui.availableSpaceX(), 55)) then
             durationStarted = true
             elapsed = 0
             sessionOver = false
@@ -67,6 +76,7 @@ function script.windowMain(dt)
             lapAtExpiry = nil
             showMessage('TRACK DAY TIMER', string.format('%d-minute timer started.', durationMinutes))
         end
+        ui.popFont()
         return
     end
 
@@ -84,20 +94,20 @@ function script.windowHUD(dt)
     if not sim or not sim.isSessionStarted or not isTrackDay() or not durationStarted then return end
 
     if not hudPositionSet then
-        ui.setNextWindowPosition(vec2(760, 35))
+        ui.setNextWindowPosition(vec2(960, 55), vec2(0.5, 0.5))
         hudPositionSet = true
     end
 
     local remaining = math.max(0, durationMinutes * 60 - elapsed)
+    ui.drawRectFilled(vec2(0, 0), ui.windowSize(), rgbm(0.01, 0.02, 0.03, 0.9), 10)
+    ui.drawRect(vec2(0, 0), ui.windowSize(), rgbm(0.9, 0.12, 0.04, 1), 2, 10)
+    ui.pushFont(ui.Font.Title)
     if sessionOver then
-        ui.pushFont(ui.Font.Main)
         ui.textColored('TRACK DAY OVER', rgbm(1, 0.2, 0.1, 1))
-        ui.popFont()
     else
-        ui.pushFont(ui.Font.Main)
         ui.text(string.format('TRACK DAY TIMER  %02d:%02d', math.floor(remaining / 60), math.floor(remaining % 60)))
-        ui.popFont()
     end
+    ui.popFont()
 end
 
 function script.update(dt)
@@ -143,7 +153,7 @@ function script.update(dt)
         if elapsed >= durationMinutes * 60 then
             sessionOver = true
             lapAtExpiry = car.lapCount
-            showMessage('TRACK DAY OVER', 'Finish this lap or enter the pits to end the session.')
+            showMessage('TRACK DAY OVER', 'Finish this lap or enter the pits to end the session.', 10)
         end
         return
     end
