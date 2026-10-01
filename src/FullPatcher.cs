@@ -407,11 +407,6 @@ class FullPatcher
         var baseModePropsType = gameType.NestedTypes.First(delegate (TypeDefinition t) { return t.Name == "BaseModeProperties"; });
         var durationFieldOnBase = baseModePropsType.Fields.First(delegate (FieldDefinition f) { return f.Name == "Duration"; });
         var durationFieldRef = mainMod.ImportReference(durationFieldOnBase);
-        var trackdayType = actoolsAsm.MainModule.Types.First(delegate (TypeDefinition t) { return t.Name == "Game"; })
-            .NestedTypes.First(delegate (TypeDefinition t) { return t.Name == "TrackdayProperties"; });
-        var usePracticeField = trackdayType.Fields.First(delegate (FieldDefinition f) { return f.Name == "UsePracticeSessionType"; });
-        var usePracticeFieldRef = mainMod.ImportReference(usePracticeField);
-
         var getModePropsMethod = vm.Methods.First(delegate (MethodDefinition m) { return m.Name == "GetModeProperties"; });
         {
             var il = getModePropsMethod.Body.GetILProcessor();
@@ -421,9 +416,6 @@ class FullPatcher
             il.InsertBefore(lastRetGmp, il.Create(OpCodes.Call, getDurationMethod));
             il.InsertBefore(lastRetGmp, il.Create(OpCodes.Conv_R8));
             il.InsertBefore(lastRetGmp, il.Create(OpCodes.Stfld, durationFieldRef));
-            il.InsertBefore(lastRetGmp, il.Create(OpCodes.Dup));
-            il.InsertBefore(lastRetGmp, il.Create(OpCodes.Ldc_I4_0));
-            il.InsertBefore(lastRetGmp, il.Create(OpCodes.Stfld, usePracticeFieldRef));
         }
 
         Console.WriteLine("  Step 3: Clone EnsureDurationSlider into QuickDrive_Trackday...");

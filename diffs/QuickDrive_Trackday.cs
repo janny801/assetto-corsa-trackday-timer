@@ -70,8 +70,7 @@ namespace AcManager.Pages.Drive
                     StartingPosition = 1,
                     RaceLaps = base.LapsNumber,
                     BotCars = botCars,
-                    // Force native Track Day so CSP AI Flood can initialize.
-                    UsePracticeSessionType = false,
+                    UsePracticeSessionType = SettingsHolder.Drive.QuickDriveTrackDayViaPractice,
                     SpeedLimit = SpeedLimit,
                     // Added:
                     Duration = (double)TrackdayDuration

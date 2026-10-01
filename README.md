@@ -8,8 +8,8 @@ A small Content Manager patch and CSP Lua notification for **Assetto Corsa** Tra
 
 - ⏱️ **Content Manager Duration Slider**: Adds a customizable session duration slider (0 to 180 minutes) to the Track Day settings grid. Setting it to 0 preserves the native 12-hour default.
 - 💾 **Persistent Settings**: Selected session lengths are saved in Content Manager presets and persist across restarts.
-- 🚦 **AI Flood Compatibility**: Explicitly writes native Track Day (`TYPE=2`) instead of Practice
-  (`TYPE=1`), while leaving `acs.exe`, CSP, spawn behavior, and AI cars unchanged.
+- 🚦 **AI Flood Compatibility**: Preserves Content Manager's native Track Day mode selection,
+  while leaving `acs.exe`, CSP, spawn behavior, and AI cars unchanged.
 - 🏁 **Session-Over Message**: Displays **`TRACK DAY OVER`** when the native Track Day countdown reaches zero.
 - 🔄 **Native Session Conclusion**: Assetto Corsa remains responsible for ending the session and presenting its normal session controls.
 
@@ -70,10 +70,9 @@ into Content Manager via **Mono.Cecil**:
 section["DURATION_MINUTES"] = (this.Duration > 0) ? (int)this.Duration : 720;
 ```
 It also dynamically injects a WPF `Slider` and `ValueLabel` into `QuickDrive_Trackday.xaml`.
-The patch preserves `NAME`, `SPAWN_SET`, and all AI car entries. It explicitly sets
-`UsePracticeSessionType=false`, which makes the generated session `TYPE=2` (native Track Day).
-This is required because CSP AI Flood is a Track Day feature and Content Manager can otherwise
-generate the mode as Practice (`TYPE=1`). Only the duration and this session-mode selection are changed.
+The patch preserves `UsePracticeSessionType`, `NAME`, `TYPE`, `SPAWN_SET`, and all AI car entries.
+Only the duration value is changed. The generated `race.ini` must be checked after launching:
+`NAME=Track Day` must be present, and the session HUD must show Track Day rather than Qualify.
 
 ### 2. TrackdayTimer Lua App (CSP)
 Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Track Day sessions:
@@ -88,8 +87,8 @@ Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Tra
 Both original files are automatically backed up before any modifications:
 - **Restore Content Manager**: Delete `Content Manager.exe` and rename `Content Manager.original.exe` back to `Content Manager.exe`.
 - **Restore Engine**: No engine restore is required; This implementation does not modify `acs.exe`. CSP's AI Flood implementation is documented as
-Track Day-only; the patch does not try to force Flood into Practice because that would require
-changing CSP behavior rather than the timer and would risk the working baseline.
+Track Day-only; the patch does not try to force Flood into Practice or Qualifying because those
+modes use different AI behavior and changing CSP would risk the working baseline.
 - **Remove Lua App**: Delete the folder `assettocorsa/apps/lua/TrackdayTimer/`.
 
 ---
