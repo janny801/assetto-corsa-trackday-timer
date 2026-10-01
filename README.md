@@ -1,6 +1,15 @@
-# Assetto Corsa Track Day Session Timer Mod
+# Assetto Corsa Track Day Session Timer & End Manager
 
-A bytecode patch and UI extension for **Content Manager** that introduces a session duration slider to **Track Day** mode in Assetto Corsa, allowing sessions to automatically count down, end, and transition to results just like Practice sessions in Weekend mode.
+A complete, two-part mod for **Assetto Corsa** and **Content Manager** that introduces a session duration slider to **Track Day** mode, patches the native in-game banner to display **"TRACK DAY OVER"**, and automatically brings the car back to pits to conclude the session just like competitive modes.
+
+---
+
+## Features
+
+- ⏱️ **Content Manager Duration Slider**: Adds a customizable session duration slider (0 to 180 minutes) to the Track Day settings grid. Setting it to 0 sets it to Unlimited (12 hours).
+- 💾 **Persistent Settings**: Selected session lengths are saved in Content Manager presets and persist across restarts.
+- 🏁 **Authentic In-Game Banner**: Replaces the hardcoded engine message `"PRACTICE OVER"` with **`"TRACK DAY OVER"`** in Assetto Corsa's native engine (`acs.exe`).
+- 🚗 **Automatic Session Conclusion**: When the timer expires, the session enters overtime allowing you to finish your current flying lap (or enter the pit lane). Once completed (or upon stopping), the car is automatically brought to pits, controls are secured, and the session results/race menu opens.
 
 ---
 
@@ -12,57 +21,72 @@ The new duration slider placed seamlessly under the **Opponents** count in the T
 ![Content Manager Track Day Slider](assets/cm_trackday_slider.png)
 
 ### 2. In-Game Session Timer & Overtime Flag
-When the configured time expires in-game, Assetto Corsa triggers the checkered flag and displays **PRACTICE OVER**:
+When the configured time expires in-game, Assetto Corsa displays **TRACK DAY OVER** and switches the timer to Overtime:
 
-![Assetto Corsa Practice Over](assets/ac_session_over.png)
+![Assetto Corsa Track Day Over](assets/ac_session_over.png)
+
+---
+
+## Installation
+
+### Option 1: 1-Click Patcher (Recommended)
+1. Download or clone this repository.
+2. Make sure **Content Manager** and **Assetto Corsa** are closed.
+3. Double-click **`Patch.bat`** (or right-click $\rightarrow$ Run as administrator if your game is in Program Files).
+4. The patcher will automatically:
+   - Detect `Content Manager.exe` (creates `Content Manager.original.exe` backup).
+   - Detect Assetto Corsa and `acs.exe` (creates `acs.original.exe` backup).
+   - Patch `Content Manager.exe` with the duration slider and session writer.
+   - Patch `acs.exe` to display **"TRACK DAY OVER"**.
+   - Install the `TrackdayTimer` Lua app into `assettocorsa/apps/lua/TrackdayTimer/`.
+
+---
+
+### Option 2: Drag & Drop (Standard AC Mod Style)
+If you prefer manual installation:
+
+1. **In-Game Session Finisher**:
+   - Copy the **`apps`** folder from this repository directly into your Assetto Corsa root directory (e.g., `C:\Program Files (x86)\Steam\steamapps\common\assettocorsa\`).
+   - This installs `apps/lua/TrackdayTimer/` which handles automatic pit return and session conclusion.
+
+2. **Content Manager & Engine Patcher**:
+   - Run `Patch.bat` to patch your `Content Manager.exe` and `acs.exe`.
 
 ---
 
 ## How It Works
 
-### Game Engine Session Rules & Overtime
-Assetto Corsa's physics engine (`acs.exe`) treats both **Weekend Practice** and **Track Day** as `[SESSION_0]` with `TYPE=1`. 
+### 1. Content Manager & actools.dll
+In vanilla Content Manager, Track Day duration was hardcoded to 720 minutes (12 hours) inside `actools.dll` (`TrackdayProperties.SetSessions`). 
 
-When `DURATION_MINUTES` is specified in `race.ini`:
-1. The in-game HUD displays a countdown timer from your configured duration.
-2. Once the countdown reaches `0:00`, the engine displays **"PRACTICE OVER"** and switches the timer to **"Time: Overtime"**.
-3. In accordance with authentic motorsport practice rules, cars out on track are not abruptly frozen mid-corner; instead, drivers are allowed to **complete their in-progress lap** and return to the pit lane (or hit `Esc` $\rightarrow$ **Back to Pits**).
-4. Once you cross the finish line or return to pits, the session concludes and transitions to the session results screen.
+This mod modifies `actools.dll` and `QuickDrive_Trackday.ViewModel` via **Mono.Cecil**:
+```csharp
+section["DURATION_MINUTES"] = (this.Duration > 0) ? (int)this.Duration : 720;
+```
+It dynamically injects a WPF `Slider` and `ValueLabel` into `QuickDrive_Trackday.xaml` on load with zero external assembly dependencies.
+
+### 2. Assetto Corsa Engine (acs.exe)
+In `acs.exe`, session type 1 (Practice) hardcodes the wide-string `L"PRACTICE OVER"` (length 13). The patcher updates:
+- String at `0x4CA5F0` $\rightarrow$ `L"TRACK DAY OVER"` (length 14).
+- Instruction string lengths at `0x13826F` and `0x1383EA` $\rightarrow$ `14` (`0x0E`).
+
+### 3. TrackdayTimer Lua App (CSP)
+Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Track Day sessions:
+- Listens to `sim.sessionTimeLeft`.
+- When time expires (`<= 0`), broadcasts **"TRACK DAY OVER"** notification.
+- Watches player telemetry:
+  - If on a flying lap, allows lap completion across the finish line.
+  - If driver enters pitlane or brings car to a stop, triggers conclusion.
+- Calls `ac.tryToTeleportToPits()` and `ac.tryToOpenRaceMenu('time')` to lock the session and display final timings.
 
 ---
 
-## The Problem in Vanilla Content Manager
+## How to Uninstall / Restore
 
-In the stock version of Content Manager:
-- `DURATION_MINUTES = 720` (12 hours) was hardcoded inside `actools.dll` (`Game+TrackdayProperties.SetSessions`).
-- The `QuickDrive_Trackday` view model had no duration property or persistence logic.
-- The UI had no slider control for setting a track day time limit.
-
----
-
-## The Solution
-
-This mod applies non-destructive IL bytecode patching via **Mono.Cecil**:
-
-1. **`actools.dll` (`Game+TrackdayProperties.SetSessions`)**:
-   - Replaced the hardcoded `720` with:
-     ```csharp
-     section["DURATION_MINUTES"] = (this.Duration > 0) ? (int)this.Duration : 720;
-     ```
-   - Setting the slider to `0` maps to `720` minutes ("Unlimited"), ensuring 100% backwards compatibility with existing presets.
-   - Re-compressed via Deflate and updated the embedded `costura.actools.dll.compressed` resource in `Content Manager.exe`.
-
-2. **`QuickDrive_Trackday.ViewModel`**:
-   - Added `TrackdayDuration` property (clamped 0 to 180 min).
-   - Added `TrackdayDuration` to `SaveableData` so user presets and session lengths persist across app restarts.
-   - Updated `GetModeProperties()` to set `Duration = (double)TrackdayDuration`.
-
-3. **WPF UI Injection (`QuickDrive_Trackday.OnLoaded`)**:
-   - Programmatically injects a `StackPanel` containing:
-     - A `ValueLabel` bound to `TrackdayDuration` using Content Manager's native `ZeroToOffConverter` ("Track Day: Unlimited" at 0, "Track Day: X minutes" when active). Supports inline numerical editing on click.
-     - A smooth WPF `Slider` (0 to 180 minutes).
-   - Positioned at **Column 1, Row 2** of the settings grid, directly matching Weekend mode's Practice duration slider layout.
-   - Compiled directly as a native method on `QuickDrive_Trackday` with **zero new external assembly references**, avoiding Costura JIT pre-load exceptions.
+Both original files are automatically backed up before any modifications:
+- **Restore Content Manager**: Delete `Content Manager.exe` and rename `Content Manager.original.exe` back to `Content Manager.exe`.
+- **Restore Engine**: Delete `acs.exe` and rename `acs.original.exe` back to `acs.exe` in your Assetto Corsa directory.
+- **Remove Lua App**: Delete the folder `assettocorsa/apps/lua/TrackdayTimer/`.
 
 ---
 
@@ -70,41 +94,32 @@ This mod applies non-destructive IL bytecode patching via **Mono.Cecil**:
 
 ```text
 assetto-corsa-trackday-timer/
+├── apps/
+│   └── lua/
+│       └── TrackdayTimer/
+│           ├── manifest.ini           # CSP Lua app manifest
+│           └── TrackdayTimer.lua      # Session conclusion & pit return logic
 ├── assets/
-│   ├── cm_trackday_slider.png     # Screenshot of Content Manager UI
-│   └── ac_session_over.png        # Screenshot of in-game Practice Over screen
+│   ├── cm_trackday_slider.png         # Screenshot of Content Manager UI
+│   └── ac_session_over.png            # Screenshot of in-game session over
 ├── diffs/
-│   ├── actools_SetSessions.cs     # Code diff for actools.dll
-│   └── QuickDrive_Trackday.cs     # Code diff for QuickDrive_Trackday
+│   ├── actools_SetSessions.cs         # Code diff for actools.dll
+│   └── QuickDrive_Trackday.cs         # Code diff for QuickDrive_Trackday
 ├── scripts/
-│   ├── run_fullpatcher.ps1        # Script to build and apply patch
-│   └── verify_patched_cm.ps1      # IL bytecode verification script
+│   ├── Patch.ps1                      # Automated compilation & patching script
+│   └── verify_patched_cm.ps1          # IL bytecode verification script
 ├── src/
-│   ├── FullPatcher.cs             # Standalone C# Mono.Cecil patcher tool
-│   ├── TrackdayDurationHelper.cs  # UI layout & binding helper
-│   ├── actools_patched.dll        # Patched actools assembly
-│   └── lib/                       # Mono.Cecil libraries
+│   ├── FullPatcher.cs                 # Standalone C# Mono.Cecil patcher tool
+│   ├── TrackdayDurationHelper.cs      # UI layout & binding helper
+│   ├── actools_patched.dll            # Patched actools assembly
+│   ├── actools_compressed.bin         # Deflate-compressed actools resource
+│   └── lib/                           # Mono.Cecil & TrackdayHelper assemblies
+├── Patch.bat                          # 1-Click installer batch script
 └── README.md
 ```
 
 ---
 
-## How to Build and Apply
+## License
 
-### Prerequisites
-- Windows 10 / 11
-- .NET Framework 4.8 / Microsoft .NET `csc.exe`
-- Content Manager for Assetto Corsa
-
-### Building and Applying
-Run the included PowerShell patch script:
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\run_fullpatcher.ps1
-```
-
-The script will:
-1. Load your original `Content Manager.exe`.
-2. Update the embedded `costura.actools.dll.compressed` resource with the patched session writer.
-3. Inject the `TrackdayDuration` view model properties, serialization, and WPF UI elements.
-4. Verify all bytecode instructions and assembly references.
-5. Save the patched executable ready for use.
+MIT License. Open source for the Assetto Corsa sim racing community.
