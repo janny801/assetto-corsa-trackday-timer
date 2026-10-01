@@ -10,7 +10,6 @@ local shutdownAt = nil
 local positionSet = false
 local sessionIndex = nil
 local lapAtExpiry = nil
-local visibilityChecked = false
 
 local function isTrackDay()
     local sim = ac.getSim()
@@ -35,18 +34,12 @@ end
 
 local function openTimerApp()
     if not durationStarted then
-        if not visibilityChecked then
-            ac.setAppsHidden(false)
-            ac.setAppOpen('TrackdayTimer')
-            visibilityChecked = true
-        end
+        ac.setAppOpen('TrackdayTimer')
         ac.setWindowOpen('main', true)
     else
-        if not ac.isWindowOpen('hud') then
-            ac.setAppOpen('TrackdayTimer')
-            ac.setWindowOpen('main', false)
-            ac.setWindowOpen('hud', true)
-        end
+        ac.setAppOpen('TrackdayTimer')
+        ac.setWindowOpen('main', false)
+        ac.setWindowOpen('hud', true)
     end
 end
 
@@ -120,7 +113,6 @@ function script.update(dt)
     if not sim or not sim.isSessionStarted or not isTrackDay() then
         positionSet = false
         sessionIndex = nil
-        visibilityChecked = false
         return
     end
 
@@ -132,7 +124,6 @@ function script.update(dt)
         finishRequested = false
         shutdownAt = nil
         lapAtExpiry = nil
-        visibilityChecked = false
     end
 
     openTimerApp()
