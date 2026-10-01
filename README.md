@@ -8,6 +8,7 @@ A complete, two-part mod for **Assetto Corsa** and **Content Manager** that intr
 
 - ⏱️ **Content Manager Duration Slider**: Adds a customizable session duration slider (0 to 180 minutes) to the Track Day settings grid. Setting it to 0 sets it to Unlimited (12 hours).
 - 💾 **Persistent Settings**: Selected session lengths are saved in Content Manager presets and persist across restarts.
+- 🚦 **AI Flood Compatibility**: Preserves Content Manager's native Track Day session-type setting so CSP's AI Flood behavior is not disabled.
 - 🏁 **Authentic In-Game Banner**: Replaces the hardcoded engine message `"PRACTICE OVER"` with **`"TRACK DAY OVER"`** in Assetto Corsa's native engine (`acs.exe`).
 - 🚗 **Automatic Session Conclusion**: When the timer expires, the session enters overtime allowing you to finish your current flying lap (or enter the pit lane). Once completed (or upon stopping), the car is automatically brought to pits, controls are secured, and the session results/race menu opens.
 
@@ -63,7 +64,22 @@ This mod modifies `actools.dll` and `QuickDrive_Trackday.ViewModel` via **Mono.C
 ```csharp
 section["DURATION_MINUTES"] = (this.Duration > 0) ? (int)this.Duration : 720;
 ```
-It dynamically injects a WPF `Slider` and `ValueLabel` into `QuickDrive_Trackday.xaml` on load with zero external assembly dependencies.
+It dynamically injects a WPF `Slider` and `ValueLabel` into `QuickDrive_Trackday.xaml` on load with zero external assembly dependencies. The patch does not override `UsePracticeSessionType`; this preserves Content Manager's native Track Day behavior and lets CSP determine AI Flood behavior from the active CSP configuration.
+
+For AI Flood, the active CSP configuration must contain the following values under `[AI_FLOOD]` (the
+configuration may be in `Documents\Assetto Corsa\cfg\extension\new_behaviour.ini` or in the loaded CSP
+preset):
+```ini
+[AI_FLOOD]
+ENABLED=1
+MIN_TRACK_LENGTH=0
+PUSH_FORCE=100000
+PUSH_SPEED=80
+SHUFFLE_BEHAVIOUR=AUTO
+SPEED_LIMIT=60,80
+```
+The timer patch does not spawn, remove, or reposition AI cars. If cars remain in pit stalls, verify that
+the track has a valid AI fast lane and that the active CSP preset contains the settings above.
 
 ### 2. Assetto Corsa Engine (acs.exe)
 In `acs.exe`, session type 1 (Practice) hardcodes the wide-string `L"PRACTICE OVER"` (length 13). The patcher updates:
