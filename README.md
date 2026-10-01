@@ -26,32 +26,42 @@ executable, session mode, and CSP AI Flood implementation untouched.
 
 ## Screenshots
 
-### 1. Content Manager Track Day Duration Slider
-The new duration slider placed seamlessly under the **Opponents** count in the Track Day settings grid:
+### 1. Track Day Timer Setup
+The timer setup screen opens automatically when the Track Day session starts. Select the duration
+with the slider and press **START TRACK DAY**:
 
-![Content Manager Track Day Slider](assets/cm_trackday_slider.png)
+![Track Day Timer setup](assets/trackday-timer-setup.png)
 
-### 2. In-Game Session Timer & Overtime Flag
-When the configured time expires in-game, Assetto Corsa displays **TRACK DAY OVER** and switches the timer to Overtime:
+### 2. In-Game Timer HUD
+After starting the session, the setup screen closes and the transparent, draggable timer remains
+visible as text only:
 
-![Assetto Corsa Track Day Over](assets/ac_session_over.png)
+![Track Day Timer HUD](assets/trackday-timer-hud.png)
 
 ---
 
 ## Installation
 
-### Installation
-1. Download or clone this repository.
-2. Make sure **Content Manager** and **Assetto Corsa** are closed.
-3. Double-click **`Patch.bat`** (or right-click $\rightarrow$ Run as administrator if your game is in Program Files).
-4. Copy the repository's `apps` folder into the Assetto Corsa root.
-5. Start the same native Track Day configuration that works with AI Flood.
-6. Restart Assetto Corsa once after installation so CSP rescans Lua app manifests.
-7. The Track Day Timer opens automatically as a centered setup panel when the session starts.
-   Choose the duration and press **Start timer**. The panel closes and a transparent, draggable
-   text-only countdown appears at its previously saved location.
+1. Download or clone this private repository.
+2. Close Content Manager and Assetto Corsa.
+3. Copy the repository's `apps` folder into the Assetto Corsa installation folder, merging it
+   with the existing `apps` folder. The default installation path is:
+   `C:\Program Files (x86)\Steam\steamapps\common\assettocorsa`
+4. Alternatively, run `Patch.bat` as administrator. The current installer installs the CSP Lua
+   app and does not patch `Content Manager.exe` or `acs.exe`.
+5. Launch the same native **Track Day** configuration that previously worked with AI Flood.
+6. Restart Assetto Corsa once after installation so CSP rescans the Lua app manifest.
+7. When the session starts, the Track Day Timer setup screen opens automatically. Adjust the
+   duration, then press **START TRACK DAY**.
+8. The setup screen closes and the transparent timer HUD appears. Drag it to the preferred
+   position; CSP saves that HUD position for later sessions.
 
----
+### Requirements
+
+- Assetto Corsa with Custom Shaders Patch Lua apps enabled.
+- A CSP version meeting the manifest's `REQUIRED_VERSION` value.
+- A native Content Manager Track Day session. Do not use the experimental native Content Manager
+  patch, because it changes the session behavior and disables AI Flood.
 
 ---
 
@@ -101,8 +111,8 @@ assetto-corsa-trackday-timer/
 │           ├── manifest.ini           # CSP Lua app manifest
 │           └── TrackdayTimer.lua      # Native countdown expiry notification
 ├── assets/
-│   ├── cm_trackday_slider.png         # Screenshot of Content Manager UI
-│   └── ac_session_over.png            # Screenshot of in-game session over
+│   ├── trackday-timer-setup.png       # Timer duration setup screen
+│   └── trackday-timer-hud.png         # Transparent in-game timer HUD
 ├── diffs/
 │   ├── actools_SetSessions.cs         # Code diff for actools.dll
 │   └── QuickDrive_Trackday.cs         # Code diff for QuickDrive_Trackday
