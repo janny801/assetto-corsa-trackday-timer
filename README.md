@@ -62,11 +62,14 @@ In the original Content Manager, Track Day writes `DURATION_MINUTES=720` (12 hou
 `actools.dll` (`TrackdayProperties.SetSessions`). This is the source of the countdown shown in
 the session information panel.
 
-This mod modifies `actools.dll` and `QuickDrive_Trackday.ViewModel` via **Mono.Cecil**:
+This mod extracts the original embedded `actools.dll`, changes only
+`TrackdayProperties.SetSessions`, and embeds that otherwise-original assembly back
+into Content Manager via **Mono.Cecil**:
 ```csharp
 section["DURATION_MINUTES"] = (this.Duration > 0) ? (int)this.Duration : 720;
 ```
-It dynamically injects a WPF `Slider` and `ValueLabel` into `QuickDrive_Trackday.xaml` on load with zero external assembly dependencies. The patch preserves `UsePracticeSessionType`, `NAME`, `TYPE`, `SPAWN_SET`, and all AI car entries.
+It also dynamically injects a WPF `Slider` and `ValueLabel` into `QuickDrive_Trackday.xaml`.
+The patch preserves `UsePracticeSessionType`, `NAME`, `TYPE`, `SPAWN_SET`, and all AI car entries.
 Only the duration value is changed.
 
 ### 2. TrackdayTimer Lua App (CSP)

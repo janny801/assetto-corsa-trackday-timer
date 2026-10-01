@@ -237,6 +237,7 @@ class FullPatcher
         resolver.AddSearchDirectory(@"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\WPF");
         resolver.AddSearchDirectory(@"C:\Windows\Microsoft.NET\Framework\v4.0.30319");
         resolver.AddSearchDirectory(@"C:\Windows\Microsoft.NET\Framework\v4.0.30319\WPF");
+        resolver.AddSearchDirectory(Path.GetTempPath());
 
         var readerParams = new ReaderParameters { AssemblyResolver = resolver };
         var cmAsm = AssemblyDefinition.ReadAssembly(origCmPath, readerParams);
@@ -244,16 +245,28 @@ class FullPatcher
         resolver.SetModule(mainMod);
         var helperAsm = AssemblyDefinition.ReadAssembly(helperPath, readerParams);
 
-        Console.WriteLine("  Step 1: Replace costura.actools.dll.compressed...");
-        byte[] actoolsBytes = File.ReadAllBytes(actoolsCompressedPath);
         var oldRes = mainMod.Resources.FirstOrDefault(delegate (Resource r) { return r.Name == "costura.actools.dll.compressed"; });
-        if (oldRes != null)
+        if (!(oldRes is EmbeddedResource))
+            throw new Exception("Original Content Manager actools resource was not found.");
+
+        Console.WriteLine("  Step 1: Patch only TrackdayProperties.SetSessions in the original actools resource...");
+        byte[] originalResource = ((EmbeddedResource)oldRes).GetResourceData();
+        byte[] actoolsBytes;
+        string minimalActoolsPath = Path.Combine(Path.GetTempPath(), "trackday-timer-actools.dll");
+        using (var input = new MemoryStream(originalResource, 0, originalResource.Length - 4))
+        using (var deflate = new DeflateStream(input, CompressionMode.Decompress))
+        using (var output = new MemoryStream())
         {
-            mainMod.Resources.Remove(oldRes);
+            deflate.CopyTo(output);
+            output.Position = 0;
+            var originalActools = AssemblyDefinition.ReadAssembly(output, readerParams);
+            PatchTrackdaySetSessions(originalActools);
+            originalActools.Write(minimalActoolsPath);
         }
-        var newRes = new EmbeddedResource("costura.actools.dll.compressed", ManifestResourceAttributes.Public, actoolsBytes);
-        mainMod.Resources.Add(newRes);
-        Console.WriteLine("  Resource updated. New size: " + actoolsBytes.Length + " bytes");
+        actoolsBytes = CompressActools(minimalActoolsPath, originalResource);
+        mainMod.Resources.Remove(oldRes);
+        mainMod.Resources.Add(new EmbeddedResource("costura.actools.dll.compressed", ManifestResourceAttributes.Public, actoolsBytes));
+        Console.WriteLine("  Resource updated from original assembly. New size: " + actoolsBytes.Length + " bytes");
 
         Console.WriteLine("  Step 2: Modify QuickDrive_Trackday.ViewModel...");
         var qdTrackday = mainMod.Types.First(delegate (TypeDefinition t) { return t.Name == "QuickDrive_Trackday"; });
@@ -277,7 +290,7 @@ class FullPatcher
         ctorIl.InsertBefore(lastRet, ctorIl.Create(OpCodes.Stfld, durationField));
 
         // Find references for getter / setter
-        var actoolsAsm = AssemblyDefinition.ReadAssembly(actoolsPatchedPath, readerParams);
+        var actoolsAsm = AssemblyDefinition.ReadAssembly(minimalActoolsPath, readerParams);
         var mathUtilsType = actoolsAsm.MainModule.Types.First(delegate (TypeDefinition t) { return t.Name == "MathUtils"; });
         var clampIntMethod = mathUtilsType.Methods.First(delegate (MethodDefinition m) {
             return m.Name == "Clamp" && m.Parameters.Count == 3 && m.Parameters[0].ParameterType.Name == "Int32";
@@ -550,6 +563,74 @@ class FullPatcher
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("  [SUCCESS] Content Manager successfully patched!");
         Console.ResetColor();
+    }
+
+    static void PatchTrackdaySetSessions(AssemblyDefinition actoolsAsm)
+    {
+        TypeDefinition trackday = null;
+        foreach (var type in actoolsAsm.MainModule.Types)
+        {
+            trackday = type.NestedTypes.FirstOrDefault(delegate (TypeDefinition nested) {
+                return nested.Name == "TrackdayProperties";
+            });
+            if (trackday != null) break;
+        }
+        if (trackday == null) throw new Exception("TrackdayProperties type was not found.");
+
+        var method = trackday.Methods.FirstOrDefault(delegate (MethodDefinition m) {
+            return m.Name == "SetSessions" && m.Parameters.Count == 1;
+        });
+        if (method == null) throw new Exception("TrackdayProperties.SetSessions was not found.");
+
+        var durationInstruction = method.Body.Instructions.FirstOrDefault(delegate (Instruction i) {
+            return i.OpCode == OpCodes.Ldc_I4 && i.Operand is int && (int)i.Operand == 720;
+        });
+        if (durationInstruction == null)
+            throw new Exception("The native 720-minute Track Day duration was not found.");
+
+        FieldDefinition durationField = null;
+        TypeDefinition baseType = trackday.BaseType.Resolve();
+        while (baseType != null && durationField == null)
+        {
+            durationField = baseType.Fields.FirstOrDefault(delegate (FieldDefinition f) {
+                return f.Name == "Duration";
+            });
+            baseType = baseType.BaseType == null ? null : baseType.BaseType.Resolve();
+        }
+        if (durationField == null)
+            throw new Exception("The native Track Day duration field was not found.");
+
+        var il = method.Body.GetILProcessor();
+        var boxInstruction = durationInstruction.Next;
+        var fallback = il.Create(OpCodes.Ldc_I4, 720);
+        var after = boxInstruction;
+        var useDuration = il.Create(OpCodes.Ldarg_0);
+        il.Replace(durationInstruction, useDuration);
+        il.InsertAfter(useDuration, il.Create(OpCodes.Ldfld, durationField));
+        il.InsertAfter(useDuration.Next, il.Create(OpCodes.Ldc_R8, 0.0));
+        il.InsertAfter(useDuration.Next.Next, il.Create(OpCodes.Ble_Un_S, fallback));
+        il.InsertAfter(useDuration.Next.Next.Next, il.Create(OpCodes.Ldarg_0));
+        il.InsertAfter(useDuration.Next.Next.Next.Next, il.Create(OpCodes.Ldfld, durationField));
+        il.InsertAfter(useDuration.Next.Next.Next.Next.Next, il.Create(OpCodes.Conv_I4));
+        il.InsertAfter(useDuration.Next.Next.Next.Next.Next.Next, il.Create(OpCodes.Br_S, after));
+        il.InsertBefore(boxInstruction, fallback);
+    }
+
+    static byte[] CompressActools(string path, byte[] originalResource)
+    {
+        byte[] assemblyBytes = File.ReadAllBytes(path);
+        using (var output = new MemoryStream())
+        {
+            using (var deflate = new DeflateStream(output, CompressionMode.Compress, true))
+            {
+                deflate.Write(assemblyBytes, 0, assemblyBytes.Length);
+            }
+            byte[] compressed = output.ToArray();
+            byte[] result = new byte[compressed.Length + 4];
+            Buffer.BlockCopy(compressed, 0, result, 0, compressed.Length);
+            Buffer.BlockCopy(originalResource, originalResource.Length - 4, result, compressed.Length, 4);
+            return result;
+        }
     }
 
     static void PatchAssettoCorsa(string acDir, string repoRoot)
