@@ -12,8 +12,10 @@ local messageTimer = 0
 local function isTrackDay()
     local sim = ac.getSim()
     if not sim then return false end
-    local name = string.lower(ac.getSessionName(sim.currentSessionIndex) or '')
-    return name:find('track') ~= nil and name:find('day') ~= nil
+    local current = string.lower(ac.getSessionName(sim.currentSessionIndex) or '')
+    local first = string.lower(ac.getSessionName(0) or '')
+    return (current:find('track') ~= nil and current:find('day') ~= nil) or
+           (first:find('track') ~= nil and first:find('day') ~= nil)
 end
 
 local function showMessage(title, description)

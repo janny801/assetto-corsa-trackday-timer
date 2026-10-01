@@ -40,7 +40,9 @@ When the configured time expires in-game, Assetto Corsa displays **TRACK DAY OVE
 3. Double-click **`Patch.bat`** (or right-click $\rightarrow$ Run as administrator if your game is in Program Files).
 4. Copy the repository's `apps` folder into the Assetto Corsa root.
 5. Start the same native Track Day configuration that works with AI Flood.
-6. Open the **Track Day Timer** CSP app, choose the duration, and press **Start timer**.
+6. Restart Assetto Corsa once after installation so CSP rescans Lua app manifests.
+7. Open the CSP app browser, search for **Track Day Timer**, choose the duration, and press
+   **Start timer**.
 
 ---
 
@@ -56,6 +58,10 @@ Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Tra
   functions.
 - It does not rewrite `race.ini`, change session modes, pause, close the process, alter controls, or
   manipulate AI vehicles.
+
+The app is available after the game session starts; CSP Lua apps cannot add controls to
+Content Manager's pre-launch Track Day setup screen. A Content Manager slider requires patching
+Content Manager itself, and earlier attempts changed the generated mode and disabled AI Flood.
 
 ---
 
