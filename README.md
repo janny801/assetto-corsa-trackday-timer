@@ -66,11 +66,11 @@ section["DURATION_MINUTES"] = (this.Duration > 0) ? (int)this.Duration : 720;
 ```
 It dynamically injects a WPF `Slider` and `ValueLabel` into `QuickDrive_Trackday.xaml` on load with zero external assembly dependencies. The patch does not override `UsePracticeSessionType`; this preserves Content Manager's native Track Day behavior and lets CSP determine AI Flood behavior from the active CSP configuration.
 
-For AI Flood, the active CSP configuration must contain the following values under `[AI_FLOOD]` (the
-configuration may be in `Documents\Assetto Corsa\cfg\extension\new_behaviour.ini` or in the loaded CSP
-preset):
+For AI Flood, the active CSP configuration must contain the following values. The standalone
+`Documents\Assetto Corsa\cfg\extension\new_behaviour.ini` uses `[AI_FLOOD]`; a Content Manager
+custom preset uses the namespaced section `[NEW_BEHAVIOUR:AI_FLOOD]`:
 ```ini
-[AI_FLOOD]
+[NEW_BEHAVIOUR:AI_FLOOD]
 ENABLED=1
 MIN_TRACK_LENGTH=0
 PUSH_FORCE=100000
@@ -79,7 +79,9 @@ SHUFFLE_BEHAVIOUR=AUTO
 SPEED_LIMIT=60,80
 ```
 The timer patch does not spawn, remove, or reposition AI cars. If cars remain in pit stalls, verify that
-the track has a valid AI fast lane and that the active CSP preset contains the settings above.
+the track has a valid AI fast lane, the correct section name is used for the configuration location,
+and the edited Content Manager preset is actually active. Content Manager can report custom presets as
+inactive even when a preset file exists on disk.
 
 ### 2. Assetto Corsa Engine (acs.exe)
 In `acs.exe`, session type 1 (Practice) hardcodes the wide-string `L"PRACTICE OVER"` (length 13). The patcher updates:
