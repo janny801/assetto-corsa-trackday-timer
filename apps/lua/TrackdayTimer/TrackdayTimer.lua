@@ -1,7 +1,8 @@
 -- TrackdayTimer.lua
 -- Assetto Corsa Track Day Session Concluder
--- Automatically brings car back to pits, keeps overtime message active,
--- and concludes session when timer expires.
+-- Automatically manages Track Day overtime, brings car back to pits,
+-- prevents car from driving away, displays persistent banners,
+-- and closes the session back to Content Manager.
 
 local isTrackDay = false
 local sessionOvertime = false
@@ -10,8 +11,41 @@ local initialOvertimeLap = nil
 local stoppedTimer = 0
 local overtimeTimer = 0
 local messageRefreshTimer = 0
-local endStage = 0
 local endStageTimer = 0
+local closeAttemptTimer = 0
+
+-- LuaJIT FFI for Win32 PostMessage (to send WM_CLOSE to acs.exe, matching pit power button)
+local ffi_ok, ffi = pcall(require, 'ffi')
+if ffi_ok then
+    pcall(function()
+        ffi.cdef[[
+            int PostMessageA(void* hWnd, unsigned int Msg, unsigned long long wParam, long long lParam);
+            void* FindWindowA(const char* lpClassName, const char* lpWindowName);
+        ]]
+    end)
+end
+
+local function closeSession()
+    if not ffi_ok or not ffi then return false end
+    local closed = false
+    pcall(function()
+        local sim = ac.getSim()
+        local hwnd = nil
+        if sim and sim.windowHandle and sim.windowHandle ~= 0 then
+            hwnd = ffi.cast('void*', ffi.cast('uintptr_t', sim.windowHandle))
+        end
+        if hwnd == nil or hwnd == ffi.cast('void*', 0) then
+            local user32 = ffi.load('user32')
+            hwnd = user32.FindWindowA(nil, 'Assetto Corsa')
+        end
+        if hwnd and hwnd ~= ffi.cast('void*', 0) then
+            -- WM_CLOSE = 0x0010 (Gracefully triggers AC shutdown, writes race_out.json, returns to CM)
+            ffi.C.PostMessageA(hwnd, 0x0010, 0, 0)
+            closed = true
+        end
+    end)
+    return closed
+end
 
 local function checkIsTrackDay()
     local sim = ac.getSim()
@@ -59,7 +93,7 @@ function script.update(dt)
         messageRefreshTimer = messageRefreshTimer + dt
 
         -- Keep the overtime message persistent on screen until driver returns to pits
-        if not sessionEnded and messageRefreshTimer >= 3.0 then
+        if not sessionEnded and messageRefreshTimer >= 2.5 then
             messageRefreshTimer = 0
             ac.setMessage("TRACK DAY OVER", "Complete your lap or return to pits to conclude.", nil, 3600)
         end
@@ -72,10 +106,10 @@ function script.update(dt)
         end
 
         -- Session completion conditions (like other competitive modes):
-        -- 1. Lap completed after overtime started
+        -- 1. Lap completed after overtime started (lapCount > initialOvertimeLap)
         -- 2. Car entered pitlane or pit stall
         -- 3. Car came to a stop on track (> 3.5 seconds)
-        -- 4. Overtime limit reached (safety timeout: 120 seconds)
+        -- 4. Overtime safety timeout (> 120 seconds)
         local lapCompleted = initialOvertimeLap and (car.lapCount > initialOvertimeLap)
         local inPits = car.isInPitlane or car.isInPit
         local carStopped = stoppedTimer >= 3.5
@@ -83,61 +117,50 @@ function script.update(dt)
 
         if not sessionEnded and (lapCompleted or inPits or carStopped or timedOut) then
             sessionEnded = true
-            endStage = 1
             endStageTimer = 0
+            closeAttemptTimer = 0
             
             -- Display persistent session finished message
             ac.setMessage("TRACK DAY HAS ENDED", "Session concluded. Returning to pits...", nil, 3600)
             
-            -- Teleport car to pit stall
+            -- Teleport car immediately to pit stall
             ac.tryToTeleportToPits()
+            ac.tryToOpenRaceMenu('time')
         end
     end
 
-    -- Two-stage session end sequence to ensure smooth teleport and menu opening
+    -- Session ended sequence
     if sessionEnded then
         endStageTimer = endStageTimer + dt
+        closeAttemptTimer = closeAttemptTimer + dt
 
-        -- Lock vehicle controls in pits
+        -- 1. Hard lock vehicle controls every single frame so car cannot drive
         local controls = ac.overrideCarControls(0)
         if controls then
             controls.gas = 0
+            controls.brake = 1
             controls.handbrake = 1
+            controls.clutch = 1
             controls.gear = 0
         end
 
-        if endStage == 1 and endStageTimer >= 0.5 then
-            endStage = 2
-            
-            -- Update message
-            ac.setMessage("TRACK DAY HAS ENDED", "Session concluded. Select Exit to return to Content Manager.", nil, 3600)
-            
-            -- Tell AC engine to finish/skip session
-            ac.tryToSkipSession()
-            
-            -- Open race menu & pause game so Exit/Restart menu is presented
+        -- 2. Prevent player from moving away in the pits: if outside pit stall, snap back immediately
+        if not car.isInPit then
+            ac.tryToTeleportToPits()
             ac.tryToOpenRaceMenu('time')
-            ac.tryToPause(true)
-
-            -- Show interactive popup dialog in case pause menu was dismissed
-            ui.modalPopup(
-                "TRACK DAY HAS ENDED",
-                "Track Day session has ended.\nYour car has returned to the pits.\n\nSelect Exit to view final results in Content Manager.",
-                "Exit to Menu",
-                "Stay in Pits",
-                ui.Icons.Exit,
-                nil,
-                function(okPressed)
-                    if okPressed then
-                        ac.tryToPause(true)
-                    end
-                end
-            )
         end
 
-        -- If user somehow leaves pit box after session ended, return them to pits
-        if not car.isInPit and not car.isInPitlane then
-            ac.tryToTeleportToPits()
+        -- 3. Continuously maintain pit race menu
+        if endStageTimer < 2.0 then
+            ac.tryToOpenRaceMenu('time')
+            ac.setMessage("TRACK DAY HAS ENDED", "Session concluded. Exiting to Content Manager...", nil, 3600)
+        end
+
+        -- 4. Gracefully close session after 1.5 seconds in pits (giving smooth pit arrival transition)
+        -- Trigger WM_CLOSE like the pit power button
+        if endStageTimer >= 1.5 and closeAttemptTimer >= 1.0 then
+            closeAttemptTimer = 0
+            closeSession()
         end
     end
 end

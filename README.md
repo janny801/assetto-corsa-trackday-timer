@@ -77,7 +77,7 @@ Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Tra
 - Watches player telemetry:
   - If on a flying lap, allows lap completion across the finish line.
   - If driver enters pitlane or brings car to a stop, triggers conclusion.
-- Calls `ac.tryToTeleportToPits()` and `ac.tryToOpenRaceMenu('time')` to lock the session and display final timings.
+- Calls `ac.tryToTeleportToPits()`, immobilizes vehicle controls, and cleanly closes the session back to Content Manager (saving session results and displaying the summary screen).
 
 ---
 
