@@ -76,9 +76,10 @@ Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Tra
 - The app opens itself automatically after a Track Day session starts. Its temporary setup window
   is centered at 900×560, can be resized, and closes after the timer starts. The countdown HUD
   does not override its position, allowing CSP to preserve the last location where you dragged it.
-  The app continuously reopens its own window when CSP permits it. The controller binding shown
-  in the screenshot is a global CSP hide/show action; restoration of other apps remains managed
-  by CSP so this app does not disable the hide function or interfere with third-party apps.
+  After starting, the HUD is opened once and is not forced open every frame, allowing CSP's global
+  hide/show action to hide and restore it together with the other apps. The controller binding
+  shown in the screenshot is a global CSP action; restoration of third-party apps remains managed
+  by CSP.
   CSP Lua apps cannot inject controls into the built-in Session Control panel.
 - It does not rewrite `race.ini`, change session modes, pause, close the process, alter controls, or
   manipulate AI vehicles.

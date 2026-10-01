@@ -34,12 +34,7 @@ end
 
 local function openTimerApp()
     if not durationStarted then
-        ac.setAppOpen('TrackdayTimer')
         ac.setWindowOpen('main', true)
-    else
-        ac.setAppOpen('TrackdayTimer')
-        ac.setWindowOpen('main', false)
-        ac.setWindowOpen('hud', true)
     end
 end
 
@@ -79,6 +74,7 @@ function script.windowMain(dt)
             lapAtExpiry = nil
             showMessage('TRACK DAY TIMER', string.format('%d-minute timer started.', durationMinutes))
             ac.setWindowOpen('main', false)
+            ac.setWindowOpen('hud', true)
         end
         ui.popFont()
         return
