@@ -13,8 +13,10 @@ executable, session mode, and CSP AI Flood implementation untouched.
 - 🚦 **AI Flood Compatibility**: Uses the original Content Manager and preserves native Track Day
   mode selection, CSP, spawn behavior, and AI cars unchanged.
 - 🏁 **Session-Over Message**: Displays **`TRACK DAY OVER`** when the app timer expires.
-- 🔄 **Pit/Results Flow**: After expiry, completing the current lap or entering the pits teleports
-  the car to the pits and opens the native timing/results menu.
+- 🔄 **Automatic End Flow**: After expiry, the app teleports the car to the pits, skips the session,
+  and shuts down Assetto Corsa so Content Manager is available again.
+- 📌 **Automatic App Opening**: The timer opens automatically when a Track Day starts and is
+  positioned beside the native Session Control panel.
 
 ---
 
@@ -41,8 +43,8 @@ When the configured time expires in-game, Assetto Corsa displays **TRACK DAY OVE
 4. Copy the repository's `apps` folder into the Assetto Corsa root.
 5. Start the same native Track Day configuration that works with AI Flood.
 6. Restart Assetto Corsa once after installation so CSP rescans Lua app manifests.
-7. Open the CSP app browser, search for **Track Day Timer**, choose the duration, and press
-   **Start timer**.
+7. The Track Day Timer opens automatically when the session starts. Choose the duration and press
+   **Start timer**; it is positioned beside the native Session Control panel.
 
 ---
 
@@ -53,18 +55,19 @@ When the configured time expires in-game, Assetto Corsa displays **TRACK DAY OVE
 ### TrackdayTimer Lua App (CSP)
 Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Track Day sessions:
 - Provides an in-game duration slider and Start button.
-- When the configured time expires, repeatedly broadcasts **"TRACK DAY OVER"**.
-- It waits for a lap completion or pit entry, then calls CSP's supported pit teleport and
-  `ac.tryToSkipSession()` functions to open the native results screen.
+- When the configured time expires, broadcasts **"TRACK DAY OVER"**, teleports the car to the pits,
+  skips the session, and calls CSP's `ac.shutdownAssettoCorsa()` to return to Content Manager.
+- The app opens itself automatically after a Track Day session starts and places its window below
+  the native Session Control panel. CSP Lua apps cannot inject controls into that built-in panel.
 - It does not rewrite `race.ini`, change session modes, pause, close the process, alter controls, or
   manipulate AI vehicles.
 
 The app is available after the game session starts; CSP Lua apps cannot add controls to
 Content Manager's pre-launch Track Day setup screen. A Content Manager slider requires patching
 Content Manager itself, and earlier attempts changed the generated mode and disabled AI Flood.
-For this controlled native-timer test, the Content Manager slider is intentionally disabled and
-the original native 720-minute value is replaced with one minute. This isolates the native session
-countdown before the slider UI is reintroduced.
+The native Content Manager timer experiment is not part of the active installation: it disabled
+AI Flood and must not be used. The original Content Manager executable is restored, and this app
+uses its own timer without changing session mode, `race.ini`, or AI behavior.
 
 ---
 
