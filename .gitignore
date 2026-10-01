@@ -1,0 +1,11 @@
+# Build outputs & temp
+bin/
+obj/
+*.tmp
+*.log
+*.user
+*.suo
+
+# Ignore local Content Manager binaries if copied
+Content Manager.exe
+Content Manager.original.exe
