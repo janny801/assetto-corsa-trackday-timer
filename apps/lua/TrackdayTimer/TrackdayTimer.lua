@@ -48,10 +48,9 @@ function script.windowMain(dt)
         return
     end
 
-    if not positionSet then
-        ui.setNextWindowPosition(vec2(0, 0))
-        positionSet = true
-    end
+    ui.setNextWindowPosition(vec2(0, 0))
+    ui.setNextWindowSize(vec2(1920, 1080))
+    positionSet = true
 
     ui.drawRectFilled(vec2(0, 0), ui.windowSize(), rgbm(0.02, 0.03, 0.05, 0.96), 12)
     ui.drawRectFilled(vec2(0, 0), vec2(ui.windowSize().x, 12), rgbm(0.85, 0.08, 0.04, 1), 12)
