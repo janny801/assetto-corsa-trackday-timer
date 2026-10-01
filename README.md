@@ -7,8 +7,8 @@ executable, session mode, and CSP AI Flood implementation untouched.
 
 ## Features
 
-- ⏱️ **In-Game Duration Prompt**: An automatically opened centered setup panel is sized to
-  900×560; choose 1–180 minutes and press Start before driving.
+- ⏱️ **In-Game Duration Prompt**: An automatically opened centered setup panel accepts a typed
+  duration from 1–180 minutes and focuses the input automatically.
 - 📐 **Resizable Setup Panel**: The setup panel can be resized by dragging its edge, with
   sensible minimum and maximum bounds.
 - 💾 **Persistent Settings**: Selected session lengths are saved in Content Manager presets and persist across restarts.
@@ -27,8 +27,8 @@ executable, session mode, and CSP AI Flood implementation untouched.
 ## Screenshots
 
 ### 1. Track Day Timer Setup
-The timer setup screen opens automatically when the Track Day session starts. Select the duration
-with the slider and press **START TRACK DAY**:
+The timer setup screen opens automatically when the Track Day session starts. The minutes field is
+focused automatically, so type the desired duration and press **START TRACK DAY** (or Enter):
 
 ![Track Day Timer setup](assets/trackday-timer-setup.png)
 
@@ -51,8 +51,8 @@ visible as text only:
    app and does not patch `Content Manager.exe` or `acs.exe`.
 5. Launch the same native **Track Day** configuration that previously worked with AI Flood.
 6. Restart Assetto Corsa once after installation so CSP rescans the Lua app manifest.
-7. When the session starts, the Track Day Timer setup screen opens automatically. Adjust the
-   duration, then press **START TRACK DAY**.
+7. When the session starts, the Track Day Timer setup screen opens automatically and focuses the
+   minutes field. Type a value from 1 to 180, then press **START TRACK DAY** or Enter.
 8. The setup screen closes and the transparent timer HUD appears. Drag it to the preferred
    position; CSP saves that HUD position for later sessions.
 
@@ -69,7 +69,8 @@ visible as text only:
 
 ### TrackdayTimer Lua App (CSP)
 Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Track Day sessions:
-- Provides an in-game duration slider and Start button.
+- Provides an automatically focused in-game minutes field and Start button. Values are clamped to
+  1–180 minutes.
 - The timer-start confirmation system message disappears after 5 seconds.
 - When the configured time expires, broadcasts **"TRACK DAY OVER"** for 10 seconds and waits for
   the current lap or pit entry before ending the session.

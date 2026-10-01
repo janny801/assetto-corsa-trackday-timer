@@ -2,6 +2,7 @@
 -- CSP app timer which leaves the native Track Day session and AI Flood untouched.
 
 local durationMinutes = 1
+local durationText = '1'
 local durationStarted = false
 local elapsed = 0
 local sessionOver = false
@@ -63,10 +64,24 @@ function script.windowMain(dt)
         ui.popFont()
         ui.textWrapped('Choose how long this session should run. AI Flood and the native Track Day mode remain unchanged.')
         ui.separator()
+        ui.text('Session length (minutes)')
         ui.setNextItemWidth(ui.availableSpaceX())
-        durationMinutes = math.floor(ui.slider('##duration', durationMinutes, 1, 180, 'Session length: %.0f min') + 0.5)
+        if ui.isWindowAppearing() then
+            ui.setKeyboardFocusHere()
+        end
+        local editedText, _, enterPressed = ui.inputText(
+            '##duration',
+            durationText,
+            ui.InputTextFlags.CharsDecimal
+        )
+        durationText = editedText
+        local enteredMinutes = tonumber(durationText)
+        if enteredMinutes then
+            durationMinutes = math.max(1, math.min(180, math.floor(enteredMinutes + 0.5)))
+        end
         ui.pushFont(ui.Font.Title)
-        if ui.button('START TRACK DAY', vec2(ui.availableSpaceX(), 55)) then
+        if ui.button('START TRACK DAY', vec2(ui.availableSpaceX(), 55)) or enterPressed then
+            durationText = tostring(durationMinutes)
             durationStarted = true
             elapsed = 0
             sessionOver = false
