@@ -1,18 +1,20 @@
 # Assetto Corsa Track Day Session Timer & End Manager
 
-A safe CSP Lua timer for **Assetto Corsa** Track Day. It leaves the original Content Manager,
-Assetto Corsa executable, and CSP AI Flood implementation untouched.
+A CSP Lua app for **Assetto Corsa** Track Day. It leaves the original Content Manager, Assetto Corsa
+executable, session mode, and CSP AI Flood implementation untouched.
 
 ---
 
 ## Features
 
-- ⏱️ **Configurable Timer**: Set `DURATION_MINUTES` in the installed app's `settings.ini`.
+- ⏱️ **In-Game Duration Prompt**: Open the Track Day Timer app, choose 1–180 minutes, and press
+  Start before driving.
 - 💾 **Persistent Settings**: Selected session lengths are saved in Content Manager presets and persist across restarts.
 - 🚦 **AI Flood Compatibility**: Uses the original Content Manager and preserves native Track Day
   mode selection, CSP, spawn behavior, and AI cars unchanged.
-- 🏁 **Session-Over Message**: Displays **`TRACK DAY OVER`** when the native Track Day countdown reaches zero.
-- 🔄 **Native Session Conclusion**: Assetto Corsa remains responsible for ending the session and presenting its normal session controls.
+- 🏁 **Session-Over Message**: Displays **`TRACK DAY OVER`** when the app timer expires.
+- 🔄 **Pit/Results Flow**: After expiry, completing the current lap or entering the pits teleports
+  the car to the pits and opens the native timing/results menu.
 
 ---
 
@@ -37,7 +39,8 @@ When the configured time expires in-game, Assetto Corsa displays **TRACK DAY OVE
 2. Make sure **Content Manager** and **Assetto Corsa** are closed.
 3. Double-click **`Patch.bat`** (or right-click $\rightarrow$ Run as administrator if your game is in Program Files).
 4. Copy the repository's `apps` folder into the Assetto Corsa root.
-5. Edit `apps\lua\TrackdayTimer\settings.ini` and set `DURATION_MINUTES`.
+5. Start the same native Track Day configuration that works with AI Flood.
+6. Open the **Track Day Timer** CSP app, choose the duration, and press **Start timer**.
 
 ---
 
@@ -47,12 +50,12 @@ When the configured time expires in-game, Assetto Corsa displays **TRACK DAY OVE
 
 ### TrackdayTimer Lua App (CSP)
 Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Track Day sessions:
-- Counts from session start using `settings.ini`.
+- Provides an in-game duration slider and Start button.
 - When the configured time expires, repeatedly broadcasts **"TRACK DAY OVER"**.
-- Does not rewrite `race.ini`, change session modes, teleport, pause, close the process, alter
-  controls, or manipulate AI vehicles.
-- Assetto Corsa remains responsible for its native 12-hour session transition; this safe mode does
-  not claim to change the engine's native duration.
+- It waits for a lap completion or pit entry, then calls CSP's supported pit teleport and timing-menu
+  functions.
+- It does not rewrite `race.ini`, change session modes, pause, close the process, alter controls, or
+  manipulate AI vehicles.
 
 ---
 
