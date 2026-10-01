@@ -9,6 +9,8 @@ executable, session mode, and CSP AI Flood implementation untouched.
 
 - ⏱️ **In-Game Duration Prompt**: An automatically opened centered setup panel is sized to
   900×560; choose 1–180 minutes and press Start before driving.
+- 📐 **Resizable Setup Panel**: The setup panel can be resized by dragging its edge, with
+  sensible minimum and maximum bounds.
 - 💾 **Persistent Settings**: Selected session lengths are saved in Content Manager presets and persist across restarts.
 - 🚦 **AI Flood Compatibility**: Uses the original Content Manager and preserves native Track Day
   mode selection, CSP, spawn behavior, and AI cars unchanged.
@@ -62,9 +64,10 @@ Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Tra
 - When the configured time expires, broadcasts **"TRACK DAY OVER"** for 10 seconds and waits for
   the current lap or pit entry before ending the session.
 - The app opens itself automatically after a Track Day session starts. Its temporary setup window
-  is centered at 900×560 and closes after the timer starts. The countdown HUD does not override
-  its position, allowing CSP to preserve the last location where you dragged it. CSP Lua apps
-  cannot inject controls into the built-in Session Control panel.
+  is centered at 900×560, can be resized, and closes after the timer starts. The countdown HUD
+  does not override its position, allowing CSP to preserve the last location where you dragged it.
+  The app also reasserts its own window if CSP reports it closed after global app visibility is
+  restored. CSP Lua apps cannot inject controls into the built-in Session Control panel.
 - It does not rewrite `race.ini`, change session modes, pause, close the process, alter controls, or
   manipulate AI vehicles.
 
