@@ -8,7 +8,6 @@ local sessionOver = false
 local finishRequested = false
 local shutdownAt = nil
 local positionSet = false
-local hudPositionSet = false
 local sessionIndex = nil
 local lapAtExpiry = nil
 
@@ -48,9 +47,11 @@ function script.windowMain(dt)
         return
     end
 
-    ui.setNextWindowPosition(vec2(0, 0))
-    ui.setNextWindowSize(vec2(1920, 1080))
-    positionSet = true
+    if not positionSet then
+        ui.setNextWindowPosition(vec2(960, 540), vec2(0.5, 0.5))
+        ui.setNextWindowSize(vec2(900, 560))
+        positionSet = true
+    end
 
     ui.drawRectFilled(vec2(0, 0), ui.windowSize(), rgbm(0.02, 0.03, 0.05, 0.96), 12)
     ui.drawRectFilled(vec2(0, 0), vec2(ui.windowSize().x, 12), rgbm(0.85, 0.08, 0.04, 1), 12)
@@ -92,11 +93,6 @@ function script.windowHUD(dt)
     local sim = ac.getSim()
     if not sim or not sim.isSessionStarted or not isTrackDay() or not durationStarted then return end
 
-    if not hudPositionSet then
-        ui.setNextWindowPosition(vec2(960, 55), vec2(0.5, 0.5))
-        hudPositionSet = true
-    end
-
     local remaining = math.max(0, durationMinutes * 60 - elapsed)
     ui.pushFont(ui.Font.Title)
     if sessionOver then
@@ -112,7 +108,6 @@ function script.update(dt)
     local sim = ac.getSim()
     if not sim or not sim.isSessionStarted or not isTrackDay() then
         positionSet = false
-        hudPositionSet = false
         sessionIndex = nil
         return
     end
