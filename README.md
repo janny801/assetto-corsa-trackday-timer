@@ -1,15 +1,16 @@
 # Assetto Corsa Track Day Session Timer & End Manager
 
-A small Content Manager patch and CSP Lua notification for **Assetto Corsa** Track Day. It changes the duration written by Content Manager while leaving the original Assetto Corsa executable and CSP AI Flood implementation untouched.
+A safe CSP Lua timer for **Assetto Corsa** Track Day. It leaves the original Content Manager,
+Assetto Corsa executable, and CSP AI Flood implementation untouched.
 
 ---
 
 ## Features
 
-- ⏱️ **Content Manager Duration Slider**: Adds a customizable session duration slider (0 to 180 minutes) to the Track Day settings grid. Setting it to 0 preserves the native 12-hour default.
+- ⏱️ **Configurable Timer**: Set `DURATION_MINUTES` in the installed app's `settings.ini`.
 - 💾 **Persistent Settings**: Selected session lengths are saved in Content Manager presets and persist across restarts.
-- 🚦 **AI Flood Compatibility**: Preserves Content Manager's native Track Day mode selection,
-  while leaving `acs.exe`, CSP, spawn behavior, and AI cars unchanged.
+- 🚦 **AI Flood Compatibility**: Uses the original Content Manager and preserves native Track Day
+  mode selection, CSP, spawn behavior, and AI cars unchanged.
 - 🏁 **Session-Over Message**: Displays **`TRACK DAY OVER`** when the native Track Day countdown reaches zero.
 - 🔄 **Native Session Conclusion**: Assetto Corsa remains responsible for ending the session and presenting its normal session controls.
 
@@ -31,54 +32,27 @@ When the configured time expires in-game, Assetto Corsa displays **TRACK DAY OVE
 
 ## Installation
 
-### Option 1: 1-Click Patcher (Recommended)
+### Installation
 1. Download or clone this repository.
 2. Make sure **Content Manager** and **Assetto Corsa** are closed.
 3. Double-click **`Patch.bat`** (or right-click $\rightarrow$ Run as administrator if your game is in Program Files).
-4. The patcher will automatically:
-   - Detect `Content Manager.exe` (creates `Content Manager.original.exe` backup).
-   - Patch `Content Manager.exe` with the duration slider and session writer.
-   - Leave `acs.exe` unchanged.
-5. Copy the repository's `apps` folder into the Assetto Corsa root to install the Lua notification.
+4. Copy the repository's `apps` folder into the Assetto Corsa root.
+5. Edit `apps\lua\TrackdayTimer\settings.ini` and set `DURATION_MINUTES`.
 
 ---
-
-### Option 2: Drag & Drop (Standard AC Mod Style)
-If you prefer manual installation:
-
-1. **In-Game Notification**:
-   - Copy the **`apps`** folder from this repository directly into your Assetto Corsa root directory (e.g., `C:\Program Files (x86)\Steam\steamapps\common\assettocorsa\`).
-   - This installs `apps/lua/TrackdayTimer/`, which displays the session-over message while
-     leaving native session conclusion untouched.
-
-2. **Content Manager Patcher**:
-   - Run `Patch.bat` to patch only `Content Manager.exe`.
 
 ---
 
 ## How It Works
 
-### 1. Content Manager & actools.dll
-In the original Content Manager, Track Day writes `DURATION_MINUTES=720` (12 hours) inside
-`actools.dll` (`TrackdayProperties.SetSessions`). This is the source of the countdown shown in
-the session information panel.
-
-This mod extracts the original embedded `actools.dll`, changes only
-`TrackdayProperties.SetSessions`, and embeds that otherwise-original assembly back
-into Content Manager via **Mono.Cecil**:
-```csharp
-section["DURATION_MINUTES"] = (this.Duration > 0) ? (int)this.Duration : 720;
-```
-It also dynamically injects a WPF `Slider` and `ValueLabel` into `QuickDrive_Trackday.xaml`.
-The patch preserves `UsePracticeSessionType`, `NAME`, `TYPE`, `SPAWN_SET`, and all AI car entries.
-Only the duration value is changed. The generated `race.ini` must be checked after launching:
-`NAME=Track Day` must be present, and the session HUD must show Track Day rather than Qualify.
-
-### 2. TrackdayTimer Lua App (CSP)
+### TrackdayTimer Lua App (CSP)
 Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Track Day sessions:
-- Listens to `sim.sessionTimeLeft`.
-- When time expires (`<= 0`), repeatedly broadcasts **"TRACK DAY OVER"**.
-- Does not teleport, pause, close the process, alter controls, or manipulate AI vehicles.
+- Counts from session start using `settings.ini`.
+- When the configured time expires, repeatedly broadcasts **"TRACK DAY OVER"**.
+- Does not rewrite `race.ini`, change session modes, teleport, pause, close the process, alter
+  controls, or manipulate AI vehicles.
+- Assetto Corsa remains responsible for its native 12-hour session transition; this safe mode does
+  not claim to change the engine's native duration.
 
 ---
 
