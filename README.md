@@ -71,6 +71,8 @@ visible as text only:
 Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Track Day sessions:
 - Provides an automatically focused in-game minutes field and Start button. Values are clamped to
   1–180 minutes.
+- Persists the active timer state with CSP storage, so hiding/restoring apps does not ask for a
+  second timer during the same session.
 - The timer-start confirmation system message disappears after 5 seconds.
 - When the configured time expires, broadcasts **"TRACK DAY OVER"** for 10 seconds and waits for
   the current lap or pit entry before ending the session.
@@ -81,6 +83,8 @@ Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Tra
   hide/show action to hide and restore it together with the other apps. The controller binding
   shown in the screenshot is a global CSP action; restoration of third-party apps remains managed
   by CSP.
+- Timer state is saved with `ac.storage()` and restored when the app is reloaded during the same
+  Track Day session. This prevents a hidden-app reload from resetting the timer setup state.
   CSP Lua apps cannot inject controls into the built-in Session Control panel.
 - It does not rewrite `race.ini`, change session modes, pause, close the process, alter controls, or
   manipulate AI vehicles.

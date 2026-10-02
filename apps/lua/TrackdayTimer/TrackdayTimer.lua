@@ -11,6 +11,39 @@ local shutdownAt = nil
 local positionSet = false
 local sessionIndex = nil
 local lapAtExpiry = nil
+local storedState = ac.storage{
+    sessionKey = '',
+    durationMinutes = 1,
+    durationStarted = false,
+    elapsed = 0,
+    sessionOver = false,
+    lapAtExpiry = -1
+}
+
+local function sessionKey(sim)
+    return string.format('%s:%d', ac.getSessionName(sim.currentSessionIndex) or '', sim.currentSessionIndex)
+end
+
+local function saveTimerState(key)
+    storedState.sessionKey = key
+    storedState.durationMinutes = durationMinutes
+    storedState.durationStarted = durationStarted
+    storedState.elapsed = elapsed
+    storedState.sessionOver = sessionOver
+    storedState.lapAtExpiry = lapAtExpiry or -1
+end
+
+local function restoreTimerState(key)
+    if storedState.sessionKey ~= key or not storedState.durationStarted then return false end
+    durationMinutes = math.max(1, math.min(180, tonumber(storedState.durationMinutes) or 1))
+    durationText = tostring(durationMinutes)
+    durationStarted = true
+    elapsed = math.max(0, tonumber(storedState.elapsed) or 0)
+    sessionOver = storedState.sessionOver == true
+    lapAtExpiry = tonumber(storedState.lapAtExpiry) or -1
+    if lapAtExpiry < 0 then lapAtExpiry = nil end
+    return true
+end
 
 local function isTrackDay()
     local sim = ac.getSim()
@@ -127,14 +160,18 @@ function script.update(dt)
         return
     end
 
+    local key = sessionKey(sim)
     if sessionIndex ~= sim.currentSessionIndex then
         sessionIndex = sim.currentSessionIndex
-        durationStarted = false
-        elapsed = 0
-        sessionOver = false
-        finishRequested = false
-        shutdownAt = nil
-        lapAtExpiry = nil
+        if not restoreTimerState(key) then
+            durationStarted = false
+            elapsed = 0
+            sessionOver = false
+            finishRequested = false
+            shutdownAt = nil
+            lapAtExpiry = nil
+            saveTimerState(key)
+        end
     end
 
     openTimerApp()
@@ -152,6 +189,8 @@ function script.update(dt)
 
     if not durationStarted then return end
 
+    saveTimerState(key)
+
     local car = ac.getCar(0)
     if not car then return end
 
@@ -161,6 +200,7 @@ function script.update(dt)
             sessionOver = true
             lapAtExpiry = car.lapCount
             showMessage('TRACK DAY OVER', 'Finish this lap or enter the pits to end the session.', 10)
+            saveTimerState(key)
         end
         return
     end
