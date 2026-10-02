@@ -41,7 +41,9 @@ local function restoreTimerState(key)
     local sim = ac.getSim()
     local currentTimeLeft = sim and sim.sessionTimeLeft or -1
     local previousTimeLeft = tonumber(storedState.nativeTimeLeft) or -1
-    if currentTimeLeft > 0 and previousTimeLeft > 0 and currentTimeLeft > previousTimeLeft + 5000 then
+    -- CSP reports sessionTimeLeft in seconds. A new Track Day resets this
+    -- countdown upward, while an app reload during the same session does not.
+    if currentTimeLeft > 0 and previousTimeLeft > 0 and currentTimeLeft > previousTimeLeft + 5 then
         return false
     end
     durationMinutes = math.max(1, math.min(180, tonumber(storedState.durationMinutes) or 1))
