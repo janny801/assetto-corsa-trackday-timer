@@ -13,6 +13,7 @@ local sessionIndex = nil
 local lapAtExpiry = nil
 local storedState = ac.storage{
     sessionKey = '',
+    nativeTimeLeft = -1,
     durationMinutes = 1,
     durationStarted = false,
     elapsed = 0,
@@ -26,6 +27,8 @@ end
 
 local function saveTimerState(key)
     storedState.sessionKey = key
+    local sim = ac.getSim()
+    storedState.nativeTimeLeft = sim and sim.sessionTimeLeft or -1
     storedState.durationMinutes = durationMinutes
     storedState.durationStarted = durationStarted
     storedState.elapsed = elapsed
@@ -35,6 +38,12 @@ end
 
 local function restoreTimerState(key)
     if storedState.sessionKey ~= key or not storedState.durationStarted then return false end
+    local sim = ac.getSim()
+    local currentTimeLeft = sim and sim.sessionTimeLeft or -1
+    local previousTimeLeft = tonumber(storedState.nativeTimeLeft) or -1
+    if currentTimeLeft > 0 and previousTimeLeft > 0 and currentTimeLeft > previousTimeLeft + 5000 then
+        return false
+    end
     durationMinutes = math.max(1, math.min(180, tonumber(storedState.durationMinutes) or 1))
     durationText = tostring(durationMinutes)
     durationStarted = true
