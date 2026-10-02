@@ -86,8 +86,8 @@ Custom Shaders Patch runs `apps/lua/TrackdayTimer/` in the background during Tra
 - Timer state is saved with `ac.storage()` and restored when the app is reloaded during the same
   Track Day session. The native session countdown is also stored as a session fingerprint, so
   starting a new Track Day with the same session name does not inherit the previous timer. CSP
-  exposes that native countdown in seconds, and a reset upward by more than five seconds marks a
-  new session. The selected timer is anchored to that native countdown, so hiding the apps does
+  exposes that native countdown in milliseconds, and a reset upward by more than 5,000 milliseconds
+  marks a new session. The selected timer is anchored to that native countdown, so hiding the apps does
   not pause the countdown while the Lua app is temporarily not being updated.
   CSP Lua apps cannot inject controls into the built-in Session Control panel.
 - It does not rewrite `race.ini`, change session modes, pause, close the process, alter controls, or
