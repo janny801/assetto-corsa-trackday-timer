@@ -5,6 +5,7 @@ local durationMinutes = 1
 local durationText = '1'
 local durationStarted = false
 local elapsed = 0
+local nativeStartTimeLeft = -1
 local sessionOver = false
 local finishRequested = false
 local shutdownAt = nil
@@ -14,6 +15,7 @@ local lapAtExpiry = nil
 local storedState = ac.storage{
     sessionKey = '',
     nativeTimeLeft = -1,
+    nativeStartTimeLeft = -1,
     durationMinutes = 1,
     durationStarted = false,
     elapsed = 0,
@@ -29,6 +31,7 @@ local function saveTimerState(key)
     storedState.sessionKey = key
     local sim = ac.getSim()
     storedState.nativeTimeLeft = sim and sim.sessionTimeLeft or -1
+    storedState.nativeStartTimeLeft = nativeStartTimeLeft or -1
     storedState.durationMinutes = durationMinutes
     storedState.durationStarted = durationStarted
     storedState.elapsed = elapsed
@@ -50,6 +53,7 @@ local function restoreTimerState(key)
     durationText = tostring(durationMinutes)
     durationStarted = true
     elapsed = math.max(0, tonumber(storedState.elapsed) or 0)
+    nativeStartTimeLeft = tonumber(storedState.nativeStartTimeLeft) or -1
     sessionOver = storedState.sessionOver == true
     lapAtExpiry = tonumber(storedState.lapAtExpiry) or -1
     if lapAtExpiry < 0 then lapAtExpiry = nil end
@@ -67,6 +71,13 @@ end
 
 local function showMessage(title, description, duration)
     ac.setMessage(title, description, nil, duration or 5)
+end
+
+local function syncElapsedToNativeTime(sim)
+    local currentTimeLeft = sim and tonumber(sim.sessionTimeLeft) or -1
+    if nativeStartTimeLeft <= 0 or currentTimeLeft <= 0 then return false end
+    elapsed = math.max(elapsed, nativeStartTimeLeft - currentTimeLeft)
+    return true
 end
 
 local function requestFinishSession()
@@ -128,6 +139,7 @@ function script.windowMain(dt)
             durationText = tostring(durationMinutes)
             durationStarted = true
             elapsed = 0
+            nativeStartTimeLeft = tonumber(sim.sessionTimeLeft) or -1
             sessionOver = false
             finishRequested = false
             lapAtExpiry = nil
@@ -181,6 +193,7 @@ function script.update(dt)
             finishRequested = false
             shutdownAt = nil
             lapAtExpiry = nil
+            nativeStartTimeLeft = -1
             saveTimerState(key)
         end
     end
@@ -200,13 +213,16 @@ function script.update(dt)
 
     if not durationStarted then return end
 
+    local usingNativeClock = syncElapsedToNativeTime(sim)
     saveTimerState(key)
 
     local car = ac.getCar(0)
     if not car then return end
 
     if not sessionOver then
-        elapsed = elapsed + dt
+        if not usingNativeClock then
+            elapsed = elapsed + dt
+        end
         if elapsed >= durationMinutes * 60 then
             sessionOver = true
             lapAtExpiry = car.lapCount
