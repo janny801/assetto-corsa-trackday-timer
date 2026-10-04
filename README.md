@@ -3,8 +3,6 @@
 A CSP Lua app for **Assetto Corsa** Track Day. It leaves the original Content Manager, Assetto Corsa
 executable, session mode, and CSP AI Flood implementation untouched.
 
----
-
 ## Features
 
 - ⏱️ **In-Game Duration Prompt**: An automatically opened centered setup panel accepts a typed
