@@ -16,10 +16,10 @@ executable, session mode, and CSP AI Flood implementation untouched.
 - 🔄 **Lap-Safe End Flow**: After expiry, the app waits for the current lap to finish or for the
   car to enter the pits, then teleports to the pits and ends Assetto Corsa.
 - 📌 **Automatic App Opening**: After you finish setting up the timer in the pits and click
-  **Drive**, the timer opens automatically. Once the timer has been set, the setup panel closes
+  **Drive**, the temporary setup panel opens automatically. It closes after you select a duration,
   and the session begins.
-- 🕒 **Draggable Timer HUD**: After starting, the setup panel closes automatically and only a
-  large text-only timer remains with no surrounding window background. It can be dragged anywhere.
+- 🕒 **Draggable Timer HUD**: After you select a duration, a text-only timer appears automatically
+  with no surrounding window background. Drag it anywhere on screen.
 
 ---
 
@@ -68,8 +68,8 @@ visible as text only:
 ## How It Works
 
 When a Track Day session starts, CSP opens the Track Day Timer app. Enter a duration from 1 to
-180 minutes and select **START TRACK DAY**. The setup panel closes and a draggable countdown HUD
-remains on screen.
+180 minutes and select **START TRACK DAY**. The temporary setup panel closes automatically, and a
+draggable countdown HUD appears.
 
 The timer runs alongside the native Track Day session and does not replace Content Manager's
 session controls or CSP AI Flood. When time expires, the app shows **TRACK DAY OVER**, waits for
@@ -97,7 +97,6 @@ Track Day-only; the patch does not try to force Flood into Practice or Qualifyin
 modes use different AI behavior and changing CSP would risk the working baseline.
 - **Remove Lua App**: Delete the folder `assettocorsa/apps/lua/TrackdayTimer/`.
 
----
 ---
 
 ## License
