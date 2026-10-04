@@ -19,8 +19,6 @@ executable, session mode, and CSP AI Flood implementation untouched.
 - 🕒 **Draggable Timer HUD**: After you select a duration, a text-only timer appears automatically
   with no surrounding window background. Drag it anywhere on screen.
 
----
-
 ## Screenshots
 
 ### 1. Track Day Timer Setup
@@ -34,8 +32,6 @@ After starting the session, the setup screen closes and the transparent, draggab
 visible as text only:
 
 ![Track Day Timer HUD](assets/trackday-timer-hud.png)
-
----
 
 ## Installation
 
@@ -61,8 +57,6 @@ visible as text only:
 - A native Content Manager Track Day session. Do not use the experimental native Content Manager
   patch, because it changes the session behavior and disables AI Flood.
 
----
-
 ## How It Works
 
 When a Track Day session starts, CSP opens the Track Day Timer app. Enter a duration from 1 to
@@ -84,8 +78,6 @@ The app is in `apps/lua/TrackdayTimer/`. `manifest.ini` defines the CSP Lua app,
 The app uses CSP Lua APIs and does not modify `race.ini`, controls, session modes, AI vehicles,
 Content Manager, or the Assetto Corsa executable.
 
----
-
 ## How to Uninstall / Restore
 
 Both original files are automatically backed up before any modifications:
@@ -94,8 +86,6 @@ Both original files are automatically backed up before any modifications:
 Track Day-only; the patch does not try to force Flood into Practice or Qualifying because those
 modes use different AI behavior and changing CSP would risk the working baseline.
 - **Remove Lua App**: Delete the folder `assettocorsa/apps/lua/TrackdayTimer/`.
-
----
 
 ## License
 
