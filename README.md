@@ -57,6 +57,13 @@ visible as text only:
 - A native Content Manager Track Day session. Do not use the experimental native Content Manager
   patch, because it changes the session behavior and disables AI Flood.
 
+### Tested CSP Versions
+
+The app has been tested and works with both:
+
+- CSP `0.3.0-preview542`
+- CSP `0.2.12-preview1`
+
 ## How It Works
 
 When a Track Day session starts, CSP opens the Track Day Timer app. Enter a duration from 1 to
