@@ -83,6 +83,9 @@ end
 local function requestFinishSession()
     if finishRequested then return end
     finishRequested = true
+    if ac.getUI and ac.getUI().appsHidden and ac.setAppsHidden then
+        ac.setAppsHidden(false)
+    end
     showMessage('TRACK DAY OVER', 'Returning to the pits and ending Assetto Corsa.')
     ac.tryToTeleportToPits()
     shutdownAt = 3
@@ -226,6 +229,9 @@ function script.update(dt)
         if elapsed >= durationMinutes * 60 then
             sessionOver = true
             lapAtExpiry = car.lapCount
+            if ac.getUI and ac.getUI().appsHidden and ac.setAppsHidden then
+                ac.setAppsHidden(false)
+            end
             showMessage('TRACK DAY OVER', 'Finish this lap or enter the pits to end the session.', 10)
             saveTimerState(key)
         end
